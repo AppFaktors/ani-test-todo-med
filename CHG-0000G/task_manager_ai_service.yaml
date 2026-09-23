@@ -1,0 +1,166 @@
+# Ani50-todo — Task Manager Conversational Agent
+# Tiny Chat crew YAML — grounded in AppFaktor Format KB (tiny-chat-crew-format.md, ai-service-agent-format.md)
+# CHG-0000G: Native conversational agent for task tracking
+#
+# BEFORE IMPORT:
+#   1. Replace llmConfig.serviceProviderId with a real provider record UUID from your environment.
+#   2. Verify the 'chat' icon is recognized by the frontend.
+#   3. Add this file's path to drakkar/content.list.
+#   4. Ensure the Tiny Chat Shared Agent (dcc73bf9-3009-495a-9005-7abe33787ec7) is already imported.
+
+aiService:
+  id: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+  name: Tiny Chat - Task Manager
+  description: Conversational agent for Ani50-todo that interprets natural language commands and translates them into task operations — create, update, query, and reprioritize.
+  batchEnabled: false
+  batchAccumulatorScript: ""
+  loopInputKey: ""
+  loopStep: 10
+  maxRetriesPerBatch: 3
+  enableProgressTracking: true
+
+aiServiceInputs:
+  - id: a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d
+    name: serviceAccountId
+    value: ""
+    description: Service account ID for execution identity
+    userInput: true
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+  - id: b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e
+    name: correlationId
+    value: ""
+    description: Correlation ID for request tracing
+    userInput: true
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+  - id: c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f
+    name: llmConfigId
+    value: ""
+    description: Optional LLM configuration override
+    userInput: true
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+  - id: d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a
+    name: contextType
+    value: ""
+    description: Session scope type (e.g. APPLICATION)
+    userInput: false
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+  - id: e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b
+    name: contextId
+    value: ""
+    description: ID of the scoped application record
+    userInput: false
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+  - id: f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c
+    name: conversation
+    value: ""
+    description: Prior conversation turns for multi-turn context
+    userInput: false
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+  - id: a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d
+    name: questionTurnCount
+    value: ""
+    description: Count of clarification question turns taken so far
+    userInput: false
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+  - id: b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e
+    name: mustGenerateProposal
+    value: ""
+    description: Signal to produce a confirmed action rather than ask further questions
+    userInput: false
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+
+agents: []
+
+tasks:
+  - task:
+      id: c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f
+      name: Interpret and Execute Task Command
+      taskId: interpret_and_execute_task_command
+      description: |-
+        You are the Task Manager conversational agent for Ani50-todo, a personal task management app.
+        Your sole purpose is to help the user manage their tasks through natural language.
+
+        ## Session context
+        Context type: {contextType}
+        Context ID: {contextId}
+        Conversation so far: {conversation}
+        Clarification turns taken: {questionTurnCount}
+        Must act now (no more questions): {mustGenerateProposal}
+
+        ## Your capabilities
+        You can interpret and act on the following task intents:
+        - CREATE: Add a new task with title, optional description, priority (High/Medium/Low), and due date.
+        - UPDATE: Change the title, description, priority, or due date of an existing task.
+        - COMPLETE: Mark a task as complete or incomplete.
+        - QUERY: List, search, or filter tasks by status, priority, due date, or keyword.
+        - REPRIORITIZE: Change the priority level of one or more tasks.
+
+        ## Rules
+        1. Identify the user's intent from their latest message and the conversation history.
+        2. Extract all relevant task fields from the message. If a required field (e.g. task title for CREATE) is missing and mustGenerateProposal is false and questionTurnCount is 0, ask exactly one clarifying question.
+        3. If mustGenerateProposal is true or questionTurnCount >= 1, proceed with the best available interpretation and state your assumption clearly in assistantMessage.
+        4. For QUERY intents, describe the matching tasks in a clear, readable list in assistantMessage.
+        5. For CREATE/UPDATE/COMPLETE/REPRIORITIZE intents, confirm the action taken (or to be taken) in assistantMessage.
+        6. If the user's request is entirely outside task management (weather, general knowledge, etc.), politely decline and redirect to task commands.
+        7. Never silently ignore an ambiguous command — always either act with a stated assumption or ask one question.
+
+        ## Response format
+        Return a single JSON object matching the expectedOutput contract exactly.
+        assistantMessage must be a plain-language confirmation or question — No markdown fences.
+        questions must be [] unless you are asking a clarifying question (at most one question with 2-3 options).
+        proposal is always null for this agent — task operations are executed directly, not proposed.
+      expectedOutput: |-
+        {"assistantMessage":"string — plain-language confirmation of the action taken, or a clarifying question if a required field is missing","questions":[{"id":"string","text":"string","options":[{"id":"string","label":"string","description":"string","recommended":true}]}],"draftPatch":{},"readiness":{"score":100,"missing":[]},"suggestedAction":null,"proposal":null,"charts":[],"report":null}
+      agentId: dcc73bf9-3009-495a-9005-7abe33787ec7
+      isVerbose: false
+      outputType: json
+      tools: ""
+    taskInputs:
+      - id: d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a
+        name: contextType
+        value: ""
+        taskId: c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f
+      - id: e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b
+        name: contextId
+        value: ""
+        taskId: c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f
+      - id: f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c
+        name: conversation
+        value: ""
+        taskId: c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f
+      - id: a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d
+        name: questionTurnCount
+        value: ""
+        taskId: c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f
+      - id: b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e
+        name: mustGenerateProposal
+        value: ""
+        taskId: c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f
+    responseTransformers: []
+
+contexts: []
+
+agentMappings:
+  - id: c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+    agentId: dcc73bf9-3009-495a-9005-7abe33787ec7
+
+taskMappings:
+  - id: d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+    taskId: c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f
+
+tinyChatAgents:
+  - id: e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b
+    key: task_manager
+    label: Task Manager
+    description: Manage your tasks by chatting — create, update, query, and reprioritize using plain language.
+    icon: chat
+    statusPhrases:
+      - "Understanding your request..."
+      - "Working on your tasks..."
+      - "Almost done..."
+    crewId: 3f8a1c2d-47e5-4b09-9f6a-82c3d1e05b74
+    sortOrder: 10
+    isSelectable: true
+    # No targetRecordType: conversational agent reached by agentFocus key 'task_manager' only.
