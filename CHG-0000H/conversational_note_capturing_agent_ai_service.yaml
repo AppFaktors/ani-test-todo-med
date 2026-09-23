@@ -1,0 +1,132 @@
+# Conversational Note Capturing Agent — Tiny Chat crew
+# CHG-0000H | Ani50-todo
+#
+# BEFORE IMPORTING:
+#   1. Replace every placeholder UUID (marked with # <-- REPLACE) with a fresh UUID v4.
+#      The only UUID to keep as-is is the shared agent: dcc73bf9-3009-495a-9005-7abe33787ec7
+#   2. Fill in model, provider, and serviceProviderId with values that exist in your environment.
+#   3. Add this file's path to drakkar/content.list.
+#   4. Import through the AI-service content pipeline.
+
+aiService:
+  id: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+  name: Tiny Chat - Conversational Note Capturing Agent
+  description: Accepts a conversation block and returns structured notes organised by key points, decisions, and action items
+  batchEnabled: false
+  batchAccumulatorScript: ""
+  loopInputKey: ""
+  loopStep: 10
+  maxRetriesPerBatch: 3
+  enableProgressTracking: true
+
+aiServiceInputs:
+  - id: 5e39e642-b097-4f54-b23c-0db0efe69a1a
+    name: serviceAccountId
+    value: ""
+    description: Service account ID for the crew
+    userInput: true
+    crewId: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+  - id: dab1f839-be4e-40f0-bb15-15cc614dcca9
+    name: correlationId
+    value: ""
+    description: Correlation ID for request tracing
+    userInput: true
+    crewId: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+  - id: be47b9a6-6c2f-4179-8c55-b3e747ba7d2d
+    name: llmConfigId
+    value: ""
+    description: Optional LLM configuration override
+    userInput: true
+    crewId: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+  - id: d1430b30-2e24-4e66-a1ae-f458ee4ce8e9
+    name: conversation
+    value: ""
+    description: The conversation block (chat log, transcript, or dialogue) to process
+    userInput: false
+    crewId: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+  - id: 54841e94-c56d-4cbc-9449-1685b117de78
+    name: additionalFiles
+    value: ""
+    description: Files attached to the chat turn, if any
+    userInput: false
+    crewId: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+
+agents: []
+
+tasks:
+  - task:
+      id: 701819b8-26aa-45b0-9e11-50157ec3dc69
+      name: Capture Structured Notes from Conversation
+      taskId: capture_structured_notes
+      description: |-
+        You are a precise note-taking assistant. The user has provided a conversation block below.
+        Your job is to read it carefully and extract structured notes organised into three sections:
+
+        1. **Key Points** — the main topics, facts, or context discussed.
+        2. **Decisions** — any conclusions, agreements, or choices made during the conversation.
+        3. **Action Items** — specific tasks, follow-ups, or commitments assigned to individuals or the group.
+
+        If the conversation contains no decisions, say so explicitly in that section.
+        If the conversation contains no action items, say so explicitly in that section.
+        If the input is empty or contains no meaningful content, return an assistantMessage asking
+        the user to provide a conversation to process, and set readiness.score to 0.
+
+        Conversation:
+        {conversation}
+
+        Additional files (if any): {additionalFiles}
+
+        Return the expected JSON envelope. The assistantMessage must contain the full structured
+        notes in readable markdown, using the three-section headings above. Do not truncate.
+      expectedOutput: |-
+        {
+          "assistantMessage": "string — full structured notes in markdown with ## Key Points, ## Decisions, ## Action Items sections",
+          "questions": [],
+          "draftPatch": {},
+          "readiness": {"score": 100, "missing": []},
+          "suggestedAction": null,
+          "proposal": {"capabilities": [], "features": [], "requirements": [], "tasks": [], "keyDecisions": [], "updates": []},
+          "charts": [],
+          "report": null
+        }
+      agentId: dcc73bf9-3009-495a-9005-7abe33787ec7
+      isVerbose: false
+      outputType: json
+      tools: ""
+    taskInputs:
+      - id: 0e7c05b5-df34-4d71-8a88-81d56d16b85f
+        name: conversation
+        value: ""
+        taskId: 701819b8-26aa-45b0-9e11-50157ec3dc69
+      - id: cc890b12-686d-45e6-afe3-a35e8600b8d0
+        name: additionalFiles
+        value: ""
+        taskId: 701819b8-26aa-45b0-9e11-50157ec3dc69
+    responseTransformers: []
+
+contexts: []
+
+agentMappings:
+  - id: 2a479f94-6869-40cb-927e-94e88263a664
+    crewId: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+    agentId: dcc73bf9-3009-495a-9005-7abe33787ec7
+
+taskMappings:
+  - id: ea525fc0-55b3-4956-b5ee-164874888f07
+    crewId: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+    taskId: 701819b8-26aa-45b0-9e11-50157ec3dc69
+
+tinyChatAgents:
+  - id: 913b7654-ff09-4f9a-ade7-e6b823feac30
+    key: note_capture_agent
+    label: Note Capture
+    description: Paste a conversation, transcript, or chat log — get structured notes with key points, decisions, and action items
+    icon: notes
+    statusPhrases:
+      - "Reading the conversation..."
+      - "Extracting key points..."
+      - "Organising notes..."
+    crewId: 3ebcb9ef-43de-4a02-8f74-3c7557bb884c
+    sortOrder: 60
+    isSelectable: true
+    # targetRecordType intentionally omitted — conversational agent, reached by key
